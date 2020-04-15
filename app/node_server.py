@@ -287,7 +287,7 @@ def verify_and_add_block():
 
 
 # endpoint to query unconfirmed transactions
-@app.route('/pending_tx',methods=['GET'])
+@app.route('/pending_tx')
 def get_pending_tx():
     return json.dumps(blockchain.unconfirmed_transactions)
 
@@ -324,7 +324,7 @@ def announce_new_block(block):
     respective chains.
     """
     for peer in peers:
-        url = "{}/add_block".format(peer)
+        url = "{}add_block".format(peer)
         headers = {'Content-Type': "application/json"}
         requests.post(url,
                       data=json.dumps(block.__dict__, sort_keys=True),
@@ -332,12 +332,3 @@ def announce_new_block(block):
 
 # Uncomment this line if you want to specify the port number in the code
 #app.run(debug=True, port=8000)
-
-if __name__ =='__main__':
-    from argparse import ArgumentParser
-    parser = ArgumentParser()
-    parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
-    args = parser.parse_args()
-    port = args.port
-
-    app.run(host='0.0.0.0',port=port,debug=True)
