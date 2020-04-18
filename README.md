@@ -4,18 +4,16 @@
 - Implement function to connect two node in web app
 
 - Modify add_transaction function with announce new transaction to peers
-
-
+  
+# Need to be
+- Mined transactions are still remained in other peer nodes. Those shall be removed after brodcasted block contains transactions in memory pool
+- Transaction validation function has not been implemented and property for storing transactions waiting for validation should also be constructed.  
 
 # Purpose
 Try to modify below code
 - transaction validation update
 
-
-
-
-
-
+---
 
 # python_blockchain_app
 
