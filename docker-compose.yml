@@ -33,6 +33,24 @@ services:
         command:
             - python
             - node_server.py
+    
+    node2:
+        build: 
+            context: .
+            dockerfile: './compose/webapp/Dockerfile-node'
+    
+        command:
+            - python
+            - node_server.py
+    node3:
+        build: 
+            context: .
+            dockerfile: './compose/webapp/Dockerfile-node'
+    
+        command:
+            - python
+            - node_server.py
+
 
 
     webapp:
