@@ -2,7 +2,7 @@ import datetime
 import json
 
 import requests
-from flask import render_template, redirect, request
+from flask import render_template, redirect, request,flash
 
 from app import app
 
@@ -106,9 +106,28 @@ def submit_textarea():
     return redirect('/transaction')
 
 
+@app.route('/p2pconnect', methods=['POST'])
+def  p2pconnect():
+    """
+    Connect two different node
+    """
+    
+    node1_address = request.form["node1_address"]
+    node2_address = request.form["node2_address"]
+    node2_address = "http://"+node2_address
+    url = 'http://'+node1_address +'/register_with'
+    header = {'Content-Type': 'application/json'}
+    data = '{"node_address": "%s"}'%(node2_address)
 
+    response = requests.post(url,headers=header,data=data)
 
-
-
+    print(response.status_code)
+    print(response.content)
+    # if response.status_code == 200:
+    #     flash('Two nodes are connected')
+    # else:
+    #     flash('Please check node address')
+    
+    return redirect('/')
 def timestamp_to_string(epoch_time):
     return datetime.datetime.fromtimestamp(epoch_time).strftime('%H:%M')

@@ -163,6 +163,7 @@ def new_transaction():
     tx_data["timestamp"] = time.time()
 
     blockchain.add_new_transaction(tx_data)
+    announce_new_transaction(tx_data)
 
     return "Success", 201
 
@@ -181,6 +182,7 @@ def get_chain():
 
 @app.route('/peers', methods=['GET'])
 def get_peers():
+    print(peers)
     return json.dumps(list(peers))
 
 
@@ -241,7 +243,8 @@ def register_with_existing_node():
         # update chain and the peers
         chain_dump = response.json()['chain']
         blockchain = create_chain_from_dump(chain_dump)
-        peers.update(response.json()['peers'])
+        # peers.update(response.json()['peers'])
+        peers.add(node_address+'/')     #Add other node address to peers
         return "Registration successful", 200
     else:
         # if something goes wrong, pass it on to the API response
@@ -285,6 +288,17 @@ def verify_and_add_block():
 
     return "Block added to the chain", 201
 
+# endpoint to add new transaction by someone else to own mining pool
+@app.route('/add_new_transaction', methods=['POST'])
+def add_transaction():
+    tx_data = request.get_json()
+
+    added = blockchain.add_new_transaction(tx_data)
+
+    if not added:
+        return "Something wrong transaction is not added", 400
+
+    return "Block added to the chain", 201
 
 # endpoint to query unconfirmed transactions
 @app.route('/pending_tx',methods=['GET'])
@@ -316,6 +330,17 @@ def consensus():
 
     return False
 
+def announce_new_transaction(tx_data):
+    """
+    A function to announce to the network once a transaction has been transferred.
+    Other nodes store the received transaction in the unmined memory
+    """
+    for peer in peers:
+        url = "{}/add_new_transaction".format(peer)
+        headers = {'Content-Type': "application/json"}
+        requests.post(url,
+                      data=json.dumps(tx_data),
+                      headers=headers)
 
 def announce_new_block(block):
     """
