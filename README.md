@@ -1,4 +1,13 @@
-# purpose
+# Update
+2020.04.18
+- Change node connecting system from host and clinet to peer to peer.
+- Implement function to connect two node in web app
+
+- Modify add_transaction function with announce new transaction to peers
+
+
+
+# Purpose
 Try to modify below code
 - transaction validation update
 
