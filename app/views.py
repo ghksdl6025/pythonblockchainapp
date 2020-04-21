@@ -11,8 +11,8 @@ from app import app
 # CONNECTED_NODE_ADDRESS = ""
 
 posts = []
-txs=[]
-
+pending_txs=[]
+unvalidated_txs=[]
 @app.route('/')
 def index():
     return render_template('index.html',
@@ -44,36 +44,48 @@ def fetch_posts():
     if response.status_code == 200:
         content = []
         chain = json.loads(response.content)
-        for block in chain["chain"]:
-            for tx in block["transactions"]:
-                tx["index"] = block["index"]
-                tx["hash"] = block["previous_hash"]
-                content.append(tx)
+        for pos, block in enumerate(chain["chain"]):
+            if pos ==0:
+                pass
+            else:
+                for tx in list(block["transactions"].values()):
+                    tx["index"] = block["index"]
+                    tx["hash"] = block["previous_hash"]
+                    content.append(tx)
 
         global posts
         posts = sorted(content, key=lambda k: k['timestamp'],
                        reverse=True)
 
 def fetch_pendingtx():
-
     get_pending_tx = "{}/pending_tx".format(CONNECTED_NODE_ADDRESS)
     response = requests.get(get_pending_tx)
     if response.status_code ==200:
         tx = json.loads(response.content)
-        print('OK!!')
+        global pending_txs
+        pending_txs = tx.values()
 
-        global txs
-        txs = tx
+def fetch_unvalidatedtx():
+    get_pending_tx = "{}/unvalidated_tx".format(CONNECTED_NODE_ADDRESS)
+    response = requests.get(get_pending_tx)
+    if response.status_code ==200:
+        tx = json.loads(response.content)
+        print(tx)
+        global unvalidated_txs
+        unvalidated_txs = tx.values()
+
 
 @app.route('/transaction')
 def transaction():
     fetch_posts()
-    fetch_pendingtx()    
+    fetch_pendingtx()
+    fetch_unvalidatedtx()    
     return render_template('transaction.html',
                            title='YourNet: Decentralized '
                                  'content sharing',
                            posts=posts,
-                           txs=txs,
+                           pending_txs=pending_txs,
+                           unvalidated_txs = unvalidated_txs,
                            node_address=CONNECTED_NODE_ADDRESS,
                            readable_time=timestamp_to_string)
 
@@ -82,15 +94,12 @@ def transaction():
 def submit_textarea():
     """
     Endpoint to create a new transaction via our application.
-    """
-    post_content = request.form["content"]
-    author = request.form["author"]
+    """   
     sender = request.form["sender"]
     receiver = request.form["receiver"]
     amount = request.form["amount"]
     post_object = {
-        'author': author,
-        'content': post_content,
+       
         'sender': sender,
         'receiver': receiver,
         'amount': amount

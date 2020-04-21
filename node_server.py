@@ -2,7 +2,7 @@ from hashlib import sha256
 import json
 import time
 
-from flask import Flask, request
+from flask import Flask, request,flash
 import requests
 
 
@@ -27,8 +27,9 @@ class Blockchain:
     difficulty = 2
 
     def __init__(self):
-        self.unconfirmed_transactions = []
+        self.unconfirmed_transactions = {}
         self.chain = []
+        self.unvalidated_transactions = {}
 
     def create_genesis_block(self):
         """
@@ -80,11 +81,38 @@ class Blockchain:
         return computed_hash
 
     def add_new_transaction(self, transaction):
-        if float(transaction['amount']) >5:
-            print('Transaction validated')
-            self.unconfirmed_transactions.append(transaction)
+        tx_hash = sha256(json.dumps(transaction).encode()).hexdigest()
+        if tx_hash not in list(self.unvalidated_transactions.keys()):
+            self.unvalidated_transactions[tx_hash] = transaction
+        
+        validation_result, validated_tx = self.tx_validation()
+        transfertoother =[]
+
+        if validation_result:
+            for validated_tx_hash in validated_tx:
+                self.unconfirmed_transactions[validated_tx_hash] = self.unvalidated_transactions[validated_tx_hash]
+                transfertoother.append(self.unvalidated_transactions[validated_tx_hash])
+                del self.unvalidated_transactions[validated_tx_hash]
+
+            return True, transfertoother
         else:
-            pass
+            return False, None
+                
+    def tx_validation(self):
+        summation = 0
+        validated_tx_list =[]
+        for tx_key,tx_value in list(self.unvalidated_transactions.items()):
+            validated_tx_list.append(tx_key)
+            summation += float(tx_value[u'amount'])
+            if summation >100:                                    
+                return True, validated_tx_list
+
+        return False, None
+
+    def add_validated_transaction(self,transaction):
+        tx_hash = sha256(json.dumps(transaction).encode()).hexdigest()
+        if tx_hash not in list(self.unconfirmed_transactions.keys()):
+            self.unconfirmed_transactions[tx_hash] = transaction
 
     @classmethod
     def is_valid_proof(cls, block, block_hash):
@@ -134,7 +162,7 @@ class Blockchain:
         proof = self.proof_of_work(new_block)
         self.add_block(new_block, proof)
 
-        self.unconfirmed_transactions = []
+        self.unconfirmed_transactions = {}
 
         return True
 
@@ -154,7 +182,9 @@ peers = set()
 @app.route('/new_transaction', methods=['POST'])
 def new_transaction():
     tx_data = request.get_json()
-    required_fields = ["author", "content"]
+    required_fields = ["sender", "receiver","amount"]
+    if float(tx_data['amount']) <0:
+        return "Invalid transaction data", 404
 
     for field in required_fields:
         if not tx_data.get(field):
@@ -162,9 +192,10 @@ def new_transaction():
 
     tx_data["timestamp"] = time.time()
 
-    blockchain.add_new_transaction(tx_data)
-    announce_new_transaction(tx_data)
-
+    add_tx_result, validated = blockchain.add_new_transaction(tx_data)
+    if add_tx_result:
+        for tx in validated:
+            announce_new_transaction(tx)
     return "Success", 201
 
 
@@ -191,6 +222,7 @@ def get_peers():
 # a command to mine from our application itself.
 @app.route('/mine', methods=['GET'])
 def mine_unconfirmed_transactions():
+
     result = blockchain.mine()
     if not result:
         return "No transactions to mine"
@@ -282,21 +314,42 @@ def verify_and_add_block():
 
     proof = block_data['hash']
     added = blockchain.add_block(block, proof)
-
+    announce_new_block(block)
     if not added:
         return "The block was discarded by the node", 400
+    
+    else:
+        for tx_hash in list(block.transactions.keys()):
+            try:
+                del blockchain.unconfirmed_transactions[tx_hash]
+            except:
+                pass
 
+    
+    # else:
+    #     del blockchain.unconfirmed_transactions[]
     return "Block added to the chain", 201
 
 # endpoint to add new transaction by someone else to own mining pool
-@app.route('/add_new_transaction', methods=['POST'])
+@app.route('/add_received_transaction', methods=['POST'])
 def add_transaction():
     tx_data = request.get_json()
+    tx_data = json.dumps(tx_data,ensure_ascii=False)
+    tx_data = eval(tx_data)
 
-    added = blockchain.add_new_transaction(tx_data)
+
+    tx_hash = sha256(json.dumps(tx_data).encode()).hexdigest()
+    if tx_hash in list(blockchain.unconfirmed_transactions.keys()):
+        added = False
+        pass
+    else:
+        blockchain.add_validated_transaction(tx_data)
+        announce_new_transaction(tx_data)
+        added = True
 
     if not added:
         return "Something wrong transaction is not added", 400
+    
 
     return "Block added to the chain", 201
 
@@ -304,6 +357,10 @@ def add_transaction():
 @app.route('/pending_tx',methods=['GET'])
 def get_pending_tx():
     return json.dumps(blockchain.unconfirmed_transactions)
+
+@app.route('/unvalidated_tx',methods=['GET'])
+def get_unvalidated_tx():
+    return json.dumps(blockchain.unvalidated_transactions)
 
 
 def consensus():
@@ -336,7 +393,7 @@ def announce_new_transaction(tx_data):
     Other nodes store the received transaction in the unmined memory
     """
     for peer in peers:
-        url = "{}/add_new_transaction".format(peer)
+        url = "{}/add_received_transaction".format(peer)
         headers = {'Content-Type': "application/json"}
         requests.post(url,
                       data=json.dumps(tx_data),
