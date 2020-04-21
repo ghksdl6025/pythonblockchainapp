@@ -7,7 +7,7 @@
 - New method, **tx_validation**, transaction validation function will validate transaction.
 ex) Transaction has three items, 'sender', 'receiver', 'amount'.
 validation condition : If the amount sum of transactions in unvalidated_transaction is over 100, transactions will be validated and transferred to unconfirmed_transaction. This function return hash list of validated transactions. 
-```
+```python
 def tx_validation(self):
   summation = 0
   validated_tx_list =[]
