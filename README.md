@@ -1,13 +1,36 @@
 # Update
+2020.04.21
+- All node/containers have own fixed ip. The information is in the containerip.txt file
+- Even indirectly connected nodes share validated transactions in unconfirmed_transaction proprety.
+- New blockchian class property, unvalidated_transaction stores transactions that don't pass the validation check.
+- After mined in unspecified node, transactions in mined block will be removed in unconfirmed_transaction property in all nodes.
+- New method, **tx_validation**, transaction validation function will validate transaction.
+ex) Transaction has three items, 'sender', 'receiver', 'amount'.
+validation condition : If the amount sum of transactions in unvalidated_transaction is over 100, transactions will be validated and transferred to unconfirmed_transaction. This function return hash list of validated transactions. 
+```
+def tx_validation(self):
+  summation = 0
+  validated_tx_list =[]
+  for tx_key,tx_value in list(self.unvalidated_transactions.items()):
+      validated_tx_list.append(tx_key)
+      summation += float(tx_value[u'amount'])
+      if summation >100:                                    
+          return True, validated_tx_list
+
+  return False, None
+```
+
+- In webapp transaction page, Chain list, pending transaction(Transaction waiting to be mined), unvalidated transaction(Transaction to be validated) are presented
+
+
 2020.04.18
 - Change node connecting system from host and clinet to peer to peer.
 - Implement function to connect two node in web app
 
 - Modify add_transaction function with announce new transaction to peers
-  
-# Need to be
-- Mined transactions are still remained in other peer nodes. Those shall be removed after brodcasted block contains transactions in memory pool
-- Transaction validation function has not been implemented and property for storing transactions waiting for validation should also be constructed.  
+
+## Need to be
+- Attach comment and explanation in all API and method in code.
 
 # Purpose
 Try to modify below code
