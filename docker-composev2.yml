@@ -1,0 +1,218 @@
+networks:
+  testing_net:
+    ipam:
+      config:
+      - subnet: 172.28.0.0/16
+      driver: default
+services:
+  node1:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.1
+    ports:
+    - 8001:5000
+  node10:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.10
+    ports:
+    - 8010:5000
+  node11:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.11
+    ports:
+    - 8011:5000
+  node12:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.12
+    ports:
+    - 8012:5000
+  node13:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.13
+    ports:
+    - 8013:5000
+  node14:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.14
+    ports:
+    - 8014:5000
+  node15:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.15
+    ports:
+    - 8015:5000
+  node16:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.16
+    ports:
+    - 8016:5000
+  node17:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.17
+    ports:
+    - 8017:5000
+  node18:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.18
+    ports:
+    - 8018:5000
+  node19:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.19
+    ports:
+    - 8019:5000
+  node2:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.2
+    ports:
+    - 8002:5000
+  node20:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.20
+    ports:
+    - 8020:5000
+  node3:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.3
+    ports:
+    - 8003:5000
+  node4:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.4
+    ports:
+    - 8004:5000
+  node5:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.5
+    ports:
+    - 8005:5000
+  node6:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.6
+    ports:
+    - 8006:5000
+  node7:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.7
+    ports:
+    - 8007:5000
+  node8:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.8
+    ports:
+    - 8008:5000
+  node9:
+    command:
+    - python
+    - node_server.py
+    image: pythonblockchainapp_node1
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.9
+    ports:
+    - 8009:5000
+  webapp:
+    build:
+      context: .
+      dockerfile: ./compose/webapp/Dockerfile-dev
+    command: sh -c "python3 run_app.py && sh ./flaskapp.sh"
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.6
+    ports:
+    - 5000:5000
+version: '3.2'
