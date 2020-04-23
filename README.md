@@ -1,4 +1,9 @@
 # Update
+2020.04.23
+- Upload 'networkgenerate.py' file which makes connected random network with given n nodes and probability 2* ln(n)/n and also saves graph as 'networkstructure.png' file.
+- After generating random network, it makes shell script 'testscript.sh' for connecting nodes that follow generated random network edges. Send post request with curl
+
+
 2020.04.21
 - All node/containers have own fixed ip. The information is in the containerip.txt file
 - Even indirectly connected nodes share validated transactions in unconfirmed_transaction proprety.
