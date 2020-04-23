@@ -1,7 +1,7 @@
 import networkx 
 import matplotlib.pyplot as plt
 import math
-import yaml
+import oyaml as yaml
 '''
 Erdős–Rényi model
 n is number of nodes
@@ -10,7 +10,7 @@ As n tends to infinity, the probability that a graph on n vertices with edge pro
 https://en.wikipedia.org/wiki/Erd%C5%91s%E2%80%93R%C3%A9nyi_model
 '''
 
-n = 20
+n = 4
 p = 2*math.log(n)/n
 
 graphconnected=True
@@ -26,28 +26,37 @@ while graphconnected:
 with open('./docker-compose.yml') as ymlfile:
     data = yaml.load(ymlfile)
 
-nodetemplate =  {'node2': 
-                    {'image': 'pythonblockchainapp_node1', 
-                    'ports': ['8002:5000'], 
-                    'command': ['python', 'node_server.py'], 
-                    'networks': {'testing_net': {'ipv4_address': '172.28.1.2'}}}}
 
+for t in list(data['services'].keys()):
+    if 'node' in t:
+        del data['services'][t]
+print(data['services'])
 
 for nodeindex in range(1,n+1):
     nodename = 'node'+str(nodeindex)
     port = str(8000+nodeindex)+':5000'
     ipaddress = '172.28.1.%s'%(nodeindex)
-    node = {nodename: 
-                    {'image': 'pythonblockchainapp_node1', 
-                    'ports': [port], 
-                    'command': ['python', 'node_server.py'], 
-                    'networks': {'testing_net': {'ipv4_address': ipaddress}}}}
-    
+
+    if nodeindex ==1:       
+        node = {nodename: 
+                        {'build': {'context': '.','dockerfile': './compose/webapp/Dockerfile-node'}, 
+                        'ports': [port], 
+                        'command': ['python', 'node_server.py'], 
+                        'networks': {'testing_net': {'ipv4_address': ipaddress}}}}
+
+    else:
+        node = {nodename: 
+                        {'image': 'pythonblockchainapp_node1', 
+                        'ports': [port], 
+                        'command': ['python', 'node_server.py'], 
+                        'networks': {'testing_net': {'ipv4_address': ipaddress}}}}
+
+
     data['services'][nodename] = node[nodename]
 
 
 
-with open('./docker-composev2.yml' ,'w') as ymlfile:
+with open('./docker-compose.yml' ,'w') as ymlfile:
     yaml.dump(data,ymlfile,default_flow_style=False)
 
 
@@ -63,7 +72,7 @@ for fn,tn in edgelist:
     connectionlist.append((fnip,tnip))
 
 
-with open('./testscript.sh','w') as f:
+with open('./flaskapp.sh','w') as f:
     f.write('#!/bin/sh\n')
     f.write('\n')
     for fnip,tnip in connectionlist:
