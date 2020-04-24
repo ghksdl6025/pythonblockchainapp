@@ -1,9 +1,0 @@
-ibmblockchain_node1_1	172.19.0.2
-ibmblockchain_node2_1	172.19.0.4
-ibmblockchain_node3_1	172.19.0.5
-
-ibmblockchain_webapp_1	172.19.0.3
-
-curl -X POST http://172.19.0.4:5000/register_with -H 'Content-Type: application/json' -d '{"node_address": "http://172.19.0.2:5000"}'
-
-curl -X POST http://172.19.0.5:5000/register_with -H 'Content-Type: application/json' -d '{"node_address": "http://172.19.0.4:5000"}'
