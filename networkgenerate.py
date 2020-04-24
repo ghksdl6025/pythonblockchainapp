@@ -1,8 +1,12 @@
+#!/bin/sh
 import networkx 
 import matplotlib.pyplot as plt
 import math
 import oyaml as yaml
 from argparse import ArgumentParser
+# import subprocess
+
+import os
 '''
 Erdős–Rényi model
 n is number of nodes
@@ -11,7 +15,7 @@ As n tends to infinity, the probability that a graph on n vertices with edge pro
 https://en.wikipedia.org/wiki/Erd%C5%91s%E2%80%93R%C3%A9nyi_model
 '''
 parser = ArgumentParser()
-parser.add_argument('-n',default=20, type=int, help='Number of nodes')
+parser.add_argument('-n',default=10, type=int, help='Number of nodes')
 args = parser.parse_args()
 
 n = args.n
@@ -50,7 +54,7 @@ for nodeindex in range(n):
 
     else:
         node = {nodename: 
-                        {'image': 'pythonblockchainapp_node1', 
+                        {'image': 'pythonblockchainapp_node0', 
                         'ports': [port], 
                         'command': ['python', 'node_server.py'], 
                         'networks': {'testing_net': {'ipv4_address': ipaddress}}}}
@@ -65,9 +69,6 @@ with open('./docker-compose.yml' ,'w') as ymlfile:
 
 
 edgelist = list(graph.edges())
-
-for pos,(fn,tn) in enumerate(edgelist):   
-    edgelist[pos] = (fn+1,tn+1)
 
 connectionlist=[]
 for fn,tn in edgelist:
@@ -84,6 +85,12 @@ with open('./flaskapp.sh','w') as f:
         f.write(request)
 f.close()
 
+with open('./bootstrap.sh','w') as f:
+    f.write('#!/bin/sh\n')
+    f.write('\n')
+    f.write('sudo docker-compose up -d')
+f.close()
+
 fig = plt.figure(3,figsize=(20,20))
 ax= fig.subplots()
 
@@ -93,3 +100,9 @@ ax.set_title('Network Structure',fontsize=20)
 # plt.show()
 
 plt.savefig('./networkstructure.png',bbox_inches = "tight")
+
+os.system('sudo docker build -t pythonblockchainapp_node0 .')
+
+os.system('sh ./bootstrap.sh')
+
+os.system('sudo docker exec -it pythonblockchainapp_webapp_1 /bin/bash')

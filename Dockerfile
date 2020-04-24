@@ -9,8 +9,5 @@ COPY . /app
 
 RUN cd /app && pip3 install -r requirements.txt
 
-EXPOSE 8000
+EXPOSE 5000
 
-ENTRYPOINT ["python"]
-
-CMD ["node_server.py"]
