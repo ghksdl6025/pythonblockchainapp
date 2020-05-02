@@ -1,10 +1,27 @@
-# Update
+# Purpose of this project
+
+**To test performance of transaction validation function in simple blockchain environment**  
+With modifying below code<sup>[1](#footnote_1)</sup> 
+
+### _What changes_
+
+1. Implement transaction validation method
+2. Modify web application
+3. Write dockerfile and docker-compose configure file to simply generate multiple node in virtual network 
+   for test case
+4. Generate random network with given number of nodes and connection probability for bootstrp
+5. Make event generator to request assigned node to perform as intended in scenario
+
+## Update history
+
 2020.04.23
+
 - Upload 'networkgenerate.py' file which makes connected random network with given n nodes and probability 2* ln(n)/n and also saves graph as 'networkstructure.png' file.
 - After generating random network, it makes shell script 'testscript.sh' for connecting nodes that follow generated random network edges. Send post request with curl
-
-
+- Upload 'eventgenerator.py' file which generates random transaction with given array of correlation identifier.
+  
 2020.04.21
+
 - All node/containers have own fixed ip. The information is in the containerip.txt file
 - Even indirectly connected nodes share validated transactions in unconfirmed_transaction proprety.
 - New blockchian class property, unvalidated_transaction stores transactions that don't pass the validation check.
@@ -12,6 +29,7 @@
 - New method, **tx_validation**, transaction validation function will validate transaction.
 ex) Transaction has three items, 'sender', 'receiver', 'amount'.
 validation condition : If the amount sum of transactions in unvalidated_transaction is over 100, transactions will be validated and transferred to unconfirmed_transaction. This function return hash list of validated transactions. 
+
 ```python
 def tx_validation(self):
   summation = 0
@@ -19,7 +37,7 @@ def tx_validation(self):
   for tx_key,tx_value in list(self.unvalidated_transactions.items()):
       validated_tx_list.append(tx_key)
       summation += float(tx_value[u'amount'])
-      if summation >100:                                    
+      if summation >100:
           return True, validated_tx_list
 
   return False, None
@@ -27,23 +45,69 @@ def tx_validation(self):
 
 - In webapp transaction page, Chain list, pending transaction(Transaction waiting to be mined), unvalidated transaction(Transaction to be validated) are presented
 
-
 2020.04.18
+
 - Change node connecting system from host and clinet to peer to peer.
 - Implement function to connect two node in web app
 
 - Modify add_transaction function with announce new transaction to peers
 
 ## Need to be
+
 - Attach comment and explanation in all API and method in code.
 
-# Purpose
-Try to modify below code
-- transaction validation update
+## Brief description
+
+```
+📦pythonblockchainapp
+ ┣ 📂app
+ ┃ ┣ 📂templates
+ ┃ ┃ ┣ 📜base.html
+ ┃ ┃ ┣ 📜index.html
+ ┃ ┃ ┗ 📜transaction.html
+ ┃ ┣ 📜views.py
+ ┃ ┗ 📜__init__.py
+ ┣ 📂compose
+ ┃ ┗ 📂webapp
+ ┃ ┃ ┣ 📜Dockerfile-dev
+ ┃ ┃ ┗ 📜Dockerfile-node
+ ┣ 📂screenshots
+ ┃ ┣ 📜1.png
+ ┃ ┣ 📜2.png
+ ┃ ┗ 📜3.png
+ ┣ 📜networkgenerate.py
+ ┣ 📜eventgenerator.py
+ ┣ 📜docker-compose.yml
+ ┣ 📜Dockerfile
+ ┣ 📜bootstrap.sh
+ ┣ 📜flaskapp.sh
+ ┣ 📜networkstructure.png
+ ┣ 📜node_server.py
+ ┣ 📜README.md
+ ┣ 📜requirements.txt
+ ┗ 📜run_app.py
+```
+'app' directory : Webapp flask template directory consists of html files and views&#46;py   
+'compose' directory : Containes docker configuration file to build node image and webapp image
+
+'networkgenerate&#46;py' :
+
+- Random network generator with given parameter '-n' as number of nodes by networkx 'Erdős–Rényi'.  
+- From generated network, write docker-compose.yml file to build virtual network, bootstrap.sh and flaskapp.sh shell script to command run docker and connect blockchain nodes with edges in random network.  
+
+'eventgenerator&#46;py' : Python file that randomly generates transactions to request assigned nodes to execute.  
+'docker-compose.yml' : Docker compose configuration file that generates blockchain node containers and webapp container.  
+'Dockerfile' : Dockerfile is for build blockchain node image.  
+'bootstrap&#46;sh' : Shell script to run docker-compose  
+'flaskapp&#46;sh' : Shell script that contains post request to connect to different node containers in rest api
+'networkstructure.png' : Random network graph image file genertaed from 'networkgenerate&#46;py'
+'node_server&#46;py' : Blockchain code with flask rest api, used for making docker 'node' image.
+'requirements.txt' : Required python packages to build node and webapp image.
+'run_app&#46;py' : Webapp python file with flask and rest api  
 
 ---
 
-# python_blockchain_app
+# python_blockchain_app<a name="footnote_1">1</a>
 
 A simple tutorial for developing a blockchain application from scratch in Python.
 
