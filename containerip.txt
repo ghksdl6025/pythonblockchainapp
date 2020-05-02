@@ -1,7 +1,0 @@
-/pythonblockchainapp_node2_1 172.28.1.2
-/pythonblockchainapp_webapp_1 172.28.1.6
-/pythonblockchainapp_node4_1 172.28.1.4
-/pythonblockchainapp_node5_1 172.28.1.5
-/pythonblockchainapp_node3_1 172.28.1.3
-/pythonblockchainapp_node1_1 172.28.1.1
-
