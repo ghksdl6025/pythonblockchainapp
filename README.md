@@ -11,8 +11,16 @@ With modifying below code<sup>[1](#footnote_1)</sup>
    for test case
 4. Generate random network with given number of nodes and connection probability for bootstrp
 5. Make event generator to request assigned node to perform as intended in scenario
+6. Use Mongodb to record transactions and activity and export the database in json format
 
 ## Update history
+2020.05.25
+
+- Upload how to use mongodb and connect blockchain node with mongodb
+- The generated transactions which pass the validation process will be recorded in mongodb
+- The database is 'blockchaindb' and collection is 'transactions'.
+- After recording transaction in given amount of time, export collection in json formation 'output.json'
+- Since container mongodb has volume in ./mongodb/data, exported file 'output.json' is also there
 
 2020.04.23
 
@@ -55,37 +63,57 @@ def tx_validation(self):
 ## Need to be
 
 - Attach comment and explanation in all API and method in code.
+- Think about the name of activities when each nodes is invoked in different process
+- Need to make shell script to control launching and testing environment
 
 ## Brief description
 
 ```
 📦pythonblockchainapp
- ┣ 📂app
- ┃ ┣ 📂templates
- ┃ ┃ ┣ 📜base.html
- ┃ ┃ ┣ 📜index.html
- ┃ ┃ ┗ 📜transaction.html
- ┃ ┣ 📜views.py
- ┃ ┗ 📜__init__.py
- ┣ 📂compose
- ┃ ┗ 📂webapp
- ┃ ┃ ┣ 📜Dockerfile-dev
- ┃ ┃ ┗ 📜Dockerfile-node
- ┣ 📂screenshots
- ┃ ┣ 📜1.png
- ┃ ┣ 📜2.png
- ┃ ┗ 📜3.png
- ┣ 📜networkgenerate.py
- ┣ 📜eventgenerator.py
- ┣ 📜docker-compose.yml
- ┣ 📜Dockerfile
- ┣ 📜bootstrap.sh
- ┣ 📜flaskapp.sh
- ┣ 📜networkstructure.png
- ┣ 📜node_server.py
+ ┣ 📂backup
+ ┃ ┗ 📜docker-compose.yml
+ ┣ 📂mongo_practice
+ ┃ ┣ 📜eventgenerator.py
+ ┃ ┣ 📜eventgenerator.pyc
+ ┃ ┣ 📜output.json
+ ┃ ┣ 📜practice.py
+ ┃ ┗ 📜readjson.py
+ ┣ 📂mongodb
+ ┃ ┣ 📂data
+ ┃ ┣ 📜dockerfile
+ ┃ ┣ 📜howtouse.md
+ ┃ ┗ 📜output.json
+ ┣ 📂python_blockchainapp
+ ┃ ┣ 📂compose
+ ┃ ┃ ┗ 📂webapp
+ ┃ ┃ ┃ ┗ 📜Dockerfile-node
+ ┃ ┣ 📂screenshots
+ ┃ ┃ ┣ 📜1.png
+ ┃ ┃ ┣ 📜2.png
+ ┃ ┃ ┗ 📜3.png
+ ┃ ┣ 📂webapp
+ ┃ ┃ ┣ 📂app
+ ┃ ┃ ┃ ┣ 📂templates
+ ┃ ┃ ┃ ┃ ┣ 📜base.html
+ ┃ ┃ ┃ ┃ ┣ 📜index.html
+ ┃ ┃ ┃ ┃ ┗ 📜transaction.html
+ ┃ ┃ ┃ ┣ 📜__init__.py
+ ┃ ┃ ┃ ┣ 📜requirements.txt
+ ┃ ┃ ┃ ┗ 📜views.py
+ ┃ ┃ ┣ 📜Dockerfile
+ ┃ ┃ ┣ 📜flaskapp.sh
+ ┃ ┃ ┣ 📜requirements.txt
+ ┃ ┃ ┗ 📜run_app.py
+ ┃ ┣ 📜Dockerfile
+ ┃ ┣ 📜bootstrap.sh
+ ┃ ┣ 📜eventgenerator.py
+ ┃ ┣ 📜flaskapp.sh
+ ┃ ┣ 📜networkgenerate.py
+ ┃ ┣ 📜networkstructure.png
+ ┃ ┣ 📜node_server.py
+ ┃ ┗ 📜requirements.txt
  ┣ 📜README.md
- ┣ 📜requirements.txt
- ┗ 📜run_app.py
+ ┗ 📜docker-compose.yml
 ```
 'app' directory : Webapp flask template directory consists of html files and views&#46;py   
 'compose' directory : Containes docker configuration file to build node image and webapp image
