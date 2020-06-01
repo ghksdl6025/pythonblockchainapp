@@ -1,10 +1,10 @@
 #!/bin/sh
-'''
-This shell script is to control blockchain mockup network.
-If the argument is up, script will clean the settings and start new network
-If the argument is down, script will close the network
-If the argument is connect, script will connect each node.
-'''
+#
+#This shell script is to control blockchain mockup network.
+#If the argument is up, script will clean the settings and start new network
+#If the argument is down, script will close the network
+#If the argument is connect, script will connect each node.
+
 
 DIR='./mongodb/data/'
 MODE=$1
