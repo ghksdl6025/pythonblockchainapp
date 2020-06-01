@@ -5,7 +5,7 @@ import pymongo
 from pymongo import MongoClient
 from flask import Flask, request,flash
 import requests
-
+import copy
 
 class Block:
     def __init__(self, index, transactions, timestamp, previous_hash, nonce=0):
@@ -199,9 +199,10 @@ def new_transaction():
     tx_data["timestamp"] = time.time()
 
     add_tx_result, validated = blockchain.add_new_transaction(tx_data)
+    record_in_db(tx_data,'Transaction initiated')
     if add_tx_result:
         for tx in validated:
-            record_in_db(tx)
+            record_in_db(tx,'Transaction validated')
             announce_new_transaction(tx)
     return "Success", 201
 
@@ -220,7 +221,6 @@ def get_chain():
 
 @app.route('/peers', methods=['GET'])
 def get_peers():
-    print(peers)
     return json.dumps(list(peers))
 
 
@@ -238,6 +238,8 @@ def mine_unconfirmed_transactions():
         chain_length = len(blockchain.chain)
         consensus()
         if chain_length == len(blockchain.chain):
+            tx_in_last_block = blockchain.last_block.transactions
+            record_in_db(tx_in_last_block,'Mining new block',mode='block')
             # announce the recently mined block to the network
             announce_new_block(blockchain.last_block)
         return "Block #{} is mined.".format(blockchain.last_block.index)
@@ -352,6 +354,7 @@ def add_transaction():
     else:
         blockchain.add_validated_transaction(tx_data)
         announce_new_transaction(tx_data)
+        record_in_db(tx_data,'Validated transaction received')
         added = True
 
     if not added:
@@ -419,18 +422,36 @@ def announce_new_block(block):
                       data=json.dumps(block.__dict__, sort_keys=True),
                       headers=headers)
 
-def record_in_db(transaction):
+def record_in_db(transaction,activity,mode='transaction'):
     '''
     Record invoked activity and transaction in database
+    mode : default = transaction
+    1)transaction
+    2)block
     '''
     conn = MongoClient('172.28.2.1:27017')
     db = conn.blockchaindb
     collect = db.transactions
-    transaction['Node'] = 'Node '+ str(port-8000)
-    collect.insert(transaction)
 
+    if mode =='transaction':
+        dbtx = copy.deepcopy(transaction)
+        dbtx['Transaction ID'] = sha256(json.dumps(transaction).encode()).hexdigest()
+        dbtx['Time in DB'] = time.time()
+        dbtx['Node'] = 'Node '+ str(port-8000)
+        dbtx['activity'] = activity
+        collect.insert(dbtx)
+
+    elif mode =='block':
+        dbtx={}
+        tx_ids = list(transaction.keys())
+        dbtx['Transaction ID'] = tx_ids
+        dbtx['Time in DB'] = time.time()
+        dbtx['Node'] = 'Node '+ str(port-8000)
+        dbtx['activity'] = activity
+        collect.insert(dbtx)
 
     return "Success", 201
+
 
 
 # Uncomment this line if you want to specify the port number in the code

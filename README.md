@@ -14,6 +14,14 @@ With modifying below code<sup>[1](#footnote_1)</sup>
 6. Use Mongodb to record transactions and activity and export the database in json format
 
 ## Update history
+2020.06.01
+
+- Now mongodb will record, 'Transaction initiated', 'Transaction validated', 'Validated transaction received', and 'Mining new block'.
+- Shell script network.sh is uploaded, it is for control network in simple way
+- To start random transaction generation, execute random_tx.py in bootstrap.
+- random_tx.py will generate and request node with random transaction in multiple processes.
+- Assigned miner node will keep mining until transaction generation ends with given condition ex)if length of pending_tx is over 20
+
 2020.05.25
 
 - Upload how to use mongodb and connect blockchain node with mongodb
@@ -72,17 +80,18 @@ def tx_validation(self):
 📦pythonblockchainapp
  ┣ 📂backup
  ┃ ┗ 📜docker-compose.yml
- ┣ 📂mongo_practice
+ ┣ 📂bootstrap
+ ┃ ┣ 📂__pycache__
+ ┃ ┃ ┗ 📜eventgenerator.cpython-36.pyc
  ┃ ┣ 📜eventgenerator.py
  ┃ ┣ 📜eventgenerator.pyc
- ┃ ┣ 📜output.json
- ┃ ┣ 📜practice.py
+ ┃ ┣ 📜random_tx.py
  ┃ ┗ 📜readjson.py
  ┣ 📂mongodb
  ┃ ┣ 📂data
+ ┃ ┃ ┗ 📜output.json
  ┃ ┣ 📜dockerfile
- ┃ ┣ 📜howtouse.md
- ┃ ┗ 📜output.json
+ ┃ ┗ 📜howtouse.md
  ┣ 📂python_blockchainapp
  ┃ ┣ 📂compose
  ┃ ┃ ┗ 📂webapp
@@ -112,8 +121,12 @@ def tx_validation(self):
  ┃ ┣ 📜networkstructure.png
  ┃ ┣ 📜node_server.py
  ┃ ┗ 📜requirements.txt
+ ┣ 📜.deepsource.toml
+ ┣ 📜.env
+ ┣ 📜.gitignore
  ┣ 📜README.md
- ┗ 📜docker-compose.yml
+ ┣ 📜docker-compose.yml
+ ┗ 📜network.sh
 ```
 'app' directory : Webapp flask template directory consists of html files and views&#46;py   
 'compose' directory : Containes docker configuration file to build node image and webapp image
