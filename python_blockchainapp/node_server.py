@@ -6,6 +6,7 @@ from pymongo import MongoClient
 from flask import Flask, request,flash
 import requests
 import copy
+import quality_control
 
 class Block:
     def __init__(self, index, transactions, timestamp, previous_hash, nonce=0):
@@ -28,6 +29,8 @@ class Blockchain:
     difficulty = 2
 
     def __init__(self):
+        self.tx_ids = set()
+        self.qc_checker={}
         self.unconfirmed_transactions = {}
         self.chain = []
         self.unvalidated_transactions = {}
@@ -83,33 +86,60 @@ class Blockchain:
 
     def add_new_transaction(self, transaction):
         tx_hash = sha256(json.dumps(transaction).encode()).hexdigest()
-        if tx_hash not in list(self.unvalidated_transactions.keys()):
+        if tx_hash not in self.tx_ids:
             self.unvalidated_transactions[tx_hash] = transaction
-        
-        validation_result, validated_tx = self.tx_validation()
-        transfertoother =[]
+            self.tx_ids.add(tx_hash)
+        return transaction
 
-        if validation_result:
-            for validated_tx_hash in validated_tx:
-                self.unconfirmed_transactions[validated_tx_hash] = self.unvalidated_transactions[validated_tx_hash]
-                transfertoother.append(self.unvalidated_transactions[validated_tx_hash])
-                del self.unvalidated_transactions[validated_tx_hash]
+        # validation_result, validated_tx = self.tx_validation()
+        # transfertoother =[]
 
-            return True, transfertoother
-        else:
-            return False, None
+        # if validation_result:
+        #     for validated_tx_hash in validated_tx:
+        #         self.unconfirmed_transactions[validated_tx_hash] = self.unvalidated_transactions[validated_tx_hash]
+        #         transfertoother.append(self.unvalidated_transactions[validated_tx_hash])
+        #         del self.unvalidated_transactions[validated_tx_hash]
+
+        #     return True, transfertoother
+        # else:
+        #     return False, None
                 
-    def tx_validation(self):
-        summation = 0
-        validated_tx_list =[]
-        for tx_key,tx_value in list(self.unvalidated_transactions.items()):
-            validated_tx_list.append(tx_key)
+    def tx_validation(self,transaction):
 
-            # summation += float(tx_value[u'amount'])
-            # if summation >100:
+        checking = False
+        tx_id = sha256(json.dumps(transaction).encode()).hexdigest()
 
-            return True, validated_tx_list
+        if checking:
+            qc_id = '%s_%s'%(transaction['CI'],transaction['term'])
+            if qc_id not in self.qc_checker:
+                record_in_db(transaction=transaction,activity='Opening quality control',qc_id=qc_id,mode='validation')
+                self.qc_checker[qc_id] = quality_control.QualityControl(CI=transaction['CI'],term=transaction['term'])
+                self.qc_checker[qc_id].tx_ids =[]
+            if bool('d1' in transaction['data']):
+                record_in_db(transaction=transaction,activity='Filling quality control',qc_id=qc_id,mode='validation')
+                self.qc_checker[qc_id].add_variable('d1',transaction['data']['d1'])
+                self.qc_checker[qc_id].tx_ids.append(tx_id)
+            else:
+                record_in_db(transaction=transaction,activity='Filling quality control',qc_id=qc_id,mode='validation')
+                self.qc_checker[qc_id].add_variable('d2',transaction['data']['d2'])
+                self.qc_checker[qc_id].tx_ids.append(tx_id)
+            
+            #Caution!!!
+            #Quality checking part
+            if self.qc_checker[qc_id].d1 is not None and self.qc_checker[qc_id].d2 is not None:
+                self.qc_checker[qc_id].update_validation()
 
+            if self.qc_checker[qc_id].validation ==True:
+                record_in_db(transaction =self.qc_checker[qc_id].tx_ids,activity='Closing quality control',qc_id=qc_id,mode='validation')
+                for txs in self.qc_checker[qc_id].tx_ids:
+                    self.unconfirmed_transactions[txs] = self.unvalidated_transactions[txs]
+                    del self.unvalidated_transactions[txs]
+                return True, self.qc_checker[qc_id].tx_ids, qc_id
+        
+        else:
+            self.unconfirmed_transactions[tx_id] = self.unvalidated_transactions[tx_id]
+            record_in_db(transaction=transaction,activity='Transaction validated')
+            del self.unvalidated_transactions[tx_id]
         return False, None
 
     def add_validated_transaction(self,transaction):
@@ -182,28 +212,27 @@ blockchain.create_genesis_block()
 # the address to other participating members of the network
 peers = set()
 
-
 # endpoint to submit a new transaction. This will be used by
 # our application to add new data (posts) to the blockchain
 @app.route('/new_transaction', methods=['POST'])
 def new_transaction():
     tx_data = request.get_json()
-    required_fields = ["sender", "receiver","amount"]
-    if float(tx_data['amount']) <0:
-        return "Invalid transaction data", 404
+    required_fields = ["CI",'term']
 
     for field in required_fields:
         if not tx_data.get(field):
+            print('WHAT', field)
             return "Invalid transaction data", 404
 
     tx_data["timestamp"] = time.time()
-
-    add_tx_result, validated = blockchain.add_new_transaction(tx_data)
     record_in_db(tx_data,'Transaction initiated')
-    if add_tx_result:
-        for tx in validated:
-            record_in_db(tx,'Transaction validated')
-            announce_new_transaction(tx)
+
+    add_tx_result = blockchain.add_new_transaction(tx_data)
+    record_in_db(add_tx_result,'Transaction in validated')
+    announce_new_transaction(add_tx_result)
+    blockchain.tx_validation(add_tx_result)
+
+
     return "Success", 201
 
 
@@ -309,6 +338,7 @@ def create_chain_from_dump(chain_dump):
     return generated_blockchain
 
 
+
 # endpoint to add a block mined by someone else to
 # the node's chain. The block is first verified by the node
 # and then added to the chain.
@@ -346,15 +376,16 @@ def add_transaction():
     tx_data = json.dumps(tx_data,ensure_ascii=False)
     tx_data = eval(tx_data)
 
-
     tx_hash = sha256(json.dumps(tx_data).encode()).hexdigest()
-    if tx_hash in list(blockchain.unconfirmed_transactions.keys()):
+    if tx_hash in blockchain.tx_ids:
         added = False
         pass
     else:
-        blockchain.add_validated_transaction(tx_data)
-        announce_new_transaction(tx_data)
-        record_in_db(tx_data,'Validated transaction received')
+        add_tx_result = blockchain.add_new_transaction(tx_data)
+        record_in_db(add_tx_result,'Transaction received')
+        announce_new_transaction(add_tx_result)
+        blockchain.tx_validation(add_tx_result)
+        
         added = True
 
     if not added:
@@ -422,13 +453,15 @@ def announce_new_block(block):
                       data=json.dumps(block.__dict__, sort_keys=True),
                       headers=headers)
 
-def record_in_db(transaction,activity,mode='transaction'):
+def record_in_db(transaction,activity,mode='transaction',qc_id=None):
     '''
     Record invoked activity and transaction in database
     mode : default = transaction
     1)transaction
     2)block
     '''
+    pass 
+
     conn = MongoClient('172.28.2.1:27017')
     db = conn.blockchaindb
     collect = db.transactions
@@ -448,6 +481,15 @@ def record_in_db(transaction,activity,mode='transaction'):
         dbtx['Time in DB'] = time.time()
         dbtx['Node'] = 'Node '+ str(port-8000)
         dbtx['activity'] = activity
+        collect.insert(dbtx)
+
+    elif mode == 'validation':
+        dbtx={}
+        dbtx['Transaction ID'] = transaction
+        dbtx['Time in DB'] = time.time()
+        dbtx['Node'] = 'Node '+ str(port-8000)
+        dbtx['activity'] = activity
+        dbtx['Quality Control ID'] = qc_id
         collect.insert(dbtx)
 
     return "Success", 201

@@ -14,6 +14,16 @@ With modifying below code<sup>[1](#footnote_1)</sup>
 6. Use Mongodb to record transactions and activity and export the database in json format
 
 ## Update history
+2020.06.08
+
+- Quality control function file is uploaded which is python class for convenience in checking validation
+- Event generator is changed. Now 'sender','receiver','amount' are deleted. CI and d1,or d2 will be generated
+- Now transaction is transferred to other node immediately when it is created. Each nodes will validate transactions
+- New events 'Opening quality control','Filling quality control', and 'Closing qualtiy control' will be recorded in mongodb
+- 'repeat_request_transaction' function is created in random_valide.py file, which to replicate previously generated transaction 
+in 'request_transaction'only to check performance by reading event_list.json file.
+
+
 2020.06.01
 
 - Now mongodb will record, 'Transaction initiated', 'Transaction validated', 'Validated transaction received', and 'Mining new block'.
@@ -85,13 +95,17 @@ def tx_validation(self):
  ┃ ┃ ┗ 📜eventgenerator.cpython-36.pyc
  ┃ ┣ 📜eventgenerator.py
  ┃ ┣ 📜eventgenerator.pyc
+ ┃ ┣ 📜evnet_list.json
  ┃ ┣ 📜random_tx.py
+ ┃ ┣ 📜random_valide.py
  ┃ ┗ 📜readjson.py
  ┣ 📂mongodb
  ┃ ┣ 📂data
  ┃ ┃ ┗ 📜output.json
  ┃ ┣ 📜dockerfile
- ┃ ┗ 📜howtouse.md
+ ┃ ┣ 📜howtouse.md
+ ┃ ┣ 📜output_withoutqc.json
+ ┃ ┗ 📜output_withqc.json
  ┣ 📂python_blockchainapp
  ┃ ┣ 📂compose
  ┃ ┃ ┗ 📂webapp
@@ -120,10 +134,9 @@ def tx_validation(self):
  ┃ ┣ 📜networkgenerate.py
  ┃ ┣ 📜networkstructure.png
  ┃ ┣ 📜node_server.py
+ ┃ ┣ 📜quality_control.py
  ┃ ┗ 📜requirements.txt
- ┣ 📜.deepsource.toml
  ┣ 📜.env
- ┣ 📜.gitignore
  ┣ 📜README.md
  ┣ 📜docker-compose.yml
  ┗ 📜network.sh
