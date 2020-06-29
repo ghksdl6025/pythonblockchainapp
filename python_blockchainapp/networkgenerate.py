@@ -28,11 +28,16 @@ while graphconnected:
     if networkx.is_connected(graph) == True:
         graphconnected = False
 
+updatingnode = {}
+for n in list(graph.nodes()):
+    updatingnode[n] = n+1
+graph = networkx.relabel_nodes(graph, updatingnode)
 
 
 
-with open('./docker-compose.yml') as ymlfile:
-    data = yaml.load(ymlfile)
+
+with open('../docker-compose.yml') as ymlfile:
+    data = yaml.load(ymlfile,Loader=yaml.FullLoader)
 
 
 for t in list(data['services'].keys()):
@@ -40,31 +45,31 @@ for t in list(data['services'].keys()):
         del data['services'][t]
 
 
-for nodeindex in range(n):
+for nodeindex in range(1,n+2):
     nodename = 'node'+str(nodeindex)
-    port = str(8000+nodeindex)+':5000'
+    port = str(8000+nodeindex)+':'+str(8000+nodeindex)
     ipaddress = '172.28.1.%s'%(nodeindex)
 
-    if nodeindex ==0:       
+    if nodeindex ==1:       
         node = {nodename: 
-                        {'build': {'context': '.','dockerfile': './compose/webapp/Dockerfile-node'}, 
+                        {'build': './python_blockchainapp',
                         'ports': [port], 
-                        'command': ['python', 'node_server.py'], 
-                        'networks': {'testing_net': {'ipv4_address': ipaddress}}}}
+                        'command': ["python","node_server.py","-p",str(8000+nodeindex)], 
+                        'networks': {'mynet': {'ipv4_address': ipaddress}}}}
 
+    
     else:
         node = {nodename: 
-                        {'image': 'pythonblockchainapp_node0', 
+                        {'image': 'pythonblockchainapp_node1', 
                         'ports': [port], 
-                        'command': ['python', 'node_server.py'], 
-                        'networks': {'testing_net': {'ipv4_address': ipaddress}}}}
+                        'command': ["python","node_server.py","-p",str(8000+nodeindex)], 
+                        'networks': {'mynet': {'ipv4_address': ipaddress}}}}
 
 
     data['services'][nodename] = node[nodename]
 
 
-
-with open('./docker-compose.yml' ,'w') as ymlfile:
+with open('../docker-compose.yml' ,'w') as ymlfile:
     yaml.dump(data,ymlfile,default_flow_style=False)
 
 
@@ -72,8 +77,8 @@ edgelist = list(graph.edges())
 
 connectionlist=[]
 for fn,tn in edgelist:
-    fnip = 'http://172.28.1.'+str(fn)+':5000/register_with'
-    tnip = 'http://172.28.1.'+str(tn)+':5000'
+    fnip = 'http://172.28.1.'+str(fn)+':'+str(8000+int(fn))+'/register_with'
+    tnip = 'http://172.28.1.'+str(tn)+':'+str(8000+int(tn))
     connectionlist.append((fnip,tnip))
 
 
@@ -85,24 +90,12 @@ with open('./flaskapp.sh','w') as f:
         f.write(request)
 f.close()
 
-with open('./bootstrap.sh','w') as f:
-    f.write('#!/bin/sh\n')
-    f.write('\n')
-    f.write('sudo docker-compose up -d')
-f.close()
-
 fig = plt.figure(3,figsize=(20,20))
 ax= fig.subplots()
 
 networkx.draw(graph,with_labels=True)
 
 ax.set_title('Network Structure',fontsize=20)
-# plt.show()
 
 plt.savefig('./networkstructure.png',bbox_inches = "tight")
 
-os.system('sudo docker build -t pythonblockchainapp_node0 .')
-
-os.system('sh ./bootstrap.sh')
-
-os.system('sudo docker exec -it pythonblockchainapp_webapp_1 /bin/bash')

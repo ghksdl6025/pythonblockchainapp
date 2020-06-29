@@ -18,7 +18,7 @@ Task 1. will be executed with multiprocessing, in below case 4 processes.
 Task 2. is another processes that keep sending GET request to miner to check and mine new block in given time.
 '''
 eventlist=[]
-def request_transaction(e_time):
+def request_transaction(e_time,node_number):
     count = 0
     start_time = time.time()
     generator = eventgenerator.create_event()
@@ -52,12 +52,16 @@ def request_transaction(e_time):
 
         eventlist.append((nt[0],nt[1],nt[2]))
 
-    with open('./evnet_list.json','w') as f:
+    eventlistname = './time'+str(e_time)+'_Nodes_'+str(node_number)+'_evnet_list.json'
+    with open(eventlistname,'w') as f:
         for line in eventlist:
             f.write(str(line))
             f.write('\n')
 
-def repeat_request_transaction(e_time):
+def repeat_request_transaction(): 
+    # Replicate random transaction with event_list.json file.
+    # Just read json file and request transaction in line by line
+
     count = 0
     start_time = time.time()
 
@@ -109,27 +113,27 @@ def keep_mining(e_time,miner):
         pending_tx = requests.get(get_pending_tx).content    
         pending_tx_len = len(json.loads(pending_tx))
 
-        if pending_tx_len >=20:
+        if pending_tx_len >=10:
             requests.get(new_mining_address)
 
 if __name__=='__main__':
 
-    e_time = 5
+    e_time = 10
+    node_number = 50
     miner =3
 
-    processes =1
+    processes =2
  
     procs =[]
-    # for number in range(processes):
-    #     proc = multiprocessing.Process(target=request_transaction, name ='Client{}'.format(number+1), args=(e_time,))
-    #     procs.append(proc)
-    #     proc.start()
+    for number in range(processes):
+        proc = multiprocessing.Process(target=request_transaction, name ='Client{}'.format(number+1), args=(e_time,node_number,))
+        procs.append(proc)
+        proc.start()
 
-    # proc = multiprocessing.Process(target=keep_mining,name='Miner',args=(e_time,miner,))
-    # proc.start()
-    # procs.append(proc)
+    proc = multiprocessing.Process(target=keep_mining,name='Miner',args=(e_time,miner,))
+    proc.start()
+    procs.append(proc)
 
-    # for proc in procs:
-    #     proc.join()
+    for proc in procs:
+        proc.join()
 
-    repeat_request_transaction(e_time)
