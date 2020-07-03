@@ -26,7 +26,7 @@ class Block:
 
 class Blockchain:
     # difficulty of our PoW algorithm
-    difficulty = 2
+    difficulty = 1
 
     def __init__(self):
         self.tx_ids = set()
@@ -34,6 +34,7 @@ class Blockchain:
         self.unconfirmed_transactions = {}
         self.chain = []
         self.unvalidated_transactions = {}
+        self.mining_right=False
 
     def create_genesis_block(self):
         """
@@ -91,42 +92,27 @@ class Blockchain:
             self.tx_ids.add(tx_hash)
         return transaction
 
-        # validation_result, validated_tx = self.tx_validation()
-        # transfertoother =[]
-
-        # if validation_result:
-        #     for validated_tx_hash in validated_tx:
-        #         self.unconfirmed_transactions[validated_tx_hash] = self.unvalidated_transactions[validated_tx_hash]
-        #         transfertoother.append(self.unvalidated_transactions[validated_tx_hash])
-        #         del self.unvalidated_transactions[validated_tx_hash]
-
-        #     return True, transfertoother
-        # else:
-        #     return False, None
-                
     def tx_validation(self,transaction):
 
         checking = False
         tx_id = sha256(json.dumps(transaction).encode()).hexdigest()
-
+        SC =10
         if checking:
             qc_id = '%s_%s'%(transaction['CI'],transaction['term'])
             if qc_id not in self.qc_checker:
-                record_in_db(transaction=transaction,activity='Opening quality control',qc_id=qc_id,mode='validation')
+                record_in_db(transaction=tx_id,activity='Opening quality control',qc_id=qc_id,mode='validation')
                 self.qc_checker[qc_id] = quality_control.QualityControl(CI=transaction['CI'],term=transaction['term'])
                 self.qc_checker[qc_id].tx_ids =[]
-            if bool('d1' in transaction['data']):
-                record_in_db(transaction=transaction,activity='Filling quality control',qc_id=qc_id,mode='validation')
-                self.qc_checker[qc_id].add_variable('d1',transaction['data']['d1'])
-                self.qc_checker[qc_id].tx_ids.append(tx_id)
-            else:
-                record_in_db(transaction=transaction,activity='Filling quality control',qc_id=qc_id,mode='validation')
-                self.qc_checker[qc_id].add_variable('d2',transaction['data']['d2'])
-                self.qc_checker[qc_id].tx_ids.append(tx_id)
+
+            qc_variable = list(transaction['data'].keys())[0]
+            qc_value = transaction['data'][qc_variable]
+            record_in_db(transaction=tx_id,activity='Filling quality control',qc_id=qc_id,mode='validation')
+            self.qc_checker[qc_id].add_variable(qc_variable,qc_value)
+            self.qc_checker[qc_id].tx_ids.append(tx_id)
             
             #Caution!!!
             #Quality checking part
-            if self.qc_checker[qc_id].d1 is not None and self.qc_checker[qc_id].d2 is not None:
+            if len(self.qc_checker[qc_id].data)==SC:
                 self.qc_checker[qc_id].update_validation()
 
             if self.qc_checker[qc_id].validation ==True:
@@ -137,10 +123,12 @@ class Blockchain:
                 return True, self.qc_checker[qc_id].tx_ids, qc_id
         
         else:
+            qc_id = '%s_%s'%(transaction['CI'],transaction['term'])
+            record_in_db(transaction=tx_id,activity='Transaction validated (without qc)',qc_id=qc_id,mode='validation')
             self.unconfirmed_transactions[tx_id] = self.unvalidated_transactions[tx_id]
-            record_in_db(transaction=transaction,activity='Transaction validated')
             del self.unvalidated_transactions[tx_id]
-        return False, None
+
+        return True, None
 
     def add_validated_transaction(self,transaction):
         """
@@ -185,22 +173,23 @@ class Blockchain:
         transactions to the blockchain by adding them to the block
         and figuring out Proof Of Work.
         """
-        if not self.unconfirmed_transactions:
-            return False
+        if self.mining_right ==True:
+            if not self.unconfirmed_transactions:
+                return False
 
-        last_block = self.last_block
+            last_block = self.last_block
 
-        new_block = Block(index=last_block.index + 1,
-                          transactions=self.unconfirmed_transactions,
-                          timestamp=time.time(),
-                          previous_hash=last_block.hash)
+            new_block = Block(index=last_block.index + 1,
+                            transactions=self.unconfirmed_transactions,
+                            timestamp=time.time(),
+                            previous_hash=last_block.hash)
 
-        proof = self.proof_of_work(new_block)
-        self.add_block(new_block, proof)
+            proof = self.proof_of_work(new_block)
+            self.add_block(new_block, proof)
 
-        self.unconfirmed_transactions = {}
+            self.unconfirmed_transactions = {}
 
-        return True
+            return True
 
 
 app = Flask(__name__)
@@ -231,6 +220,7 @@ def new_transaction():
     record_in_db(add_tx_result,'Transaction in validated')
     announce_new_transaction(add_tx_result)
     blockchain.tx_validation(add_tx_result)
+    mine_unconfirmed_transactions()
 
 
     return "Success", 201
@@ -259,19 +249,20 @@ def get_peers():
 @app.route('/mine', methods=['GET'])
 def mine_unconfirmed_transactions():
 
-    result = blockchain.mine()
-    if not result:
-        return "No transactions to mine"
-    else:
-        # Making sure we have the longest chain before announcing to the network
-        chain_length = len(blockchain.chain)
-        consensus()
-        if chain_length == len(blockchain.chain):
-            tx_in_last_block = blockchain.last_block.transactions
-            record_in_db(tx_in_last_block,'Mining new block',mode='block')
-            # announce the recently mined block to the network
-            announce_new_block(blockchain.last_block)
-        return "Block #{} is mined.".format(blockchain.last_block.index)
+    if len(blockchain.unconfirmed_transactions) >=10:
+        result = blockchain.mine()
+        if not result:
+            return "No transactions to mine"
+        else:
+            # Making sure we have the longest chain before announcing to the network
+            chain_length = len(blockchain.chain)
+            consensus()
+            if chain_length == len(blockchain.chain):
+                tx_in_last_block = blockchain.last_block.transactions
+                record_in_db(tx_in_last_block,'Mining new block',mode='block')
+                # announce the recently mined block to the network
+                announce_new_block(blockchain.last_block)
+            return "Block #{} is mined.".format(blockchain.last_block.index)
 
 
 # endpoint to add new peers to the network.
@@ -288,6 +279,14 @@ def register_new_peers():
     # so that he can sync
     return get_chain()
 
+
+@app.route('/mining_right',methods=['GET'])
+def permit_minig():
+    if blockchain.mining_right ==True:
+        pass
+    else:
+        blockchain.mining_right =True
+    return str(blockchain.mining_right)
 
 @app.route('/register_with', methods=['POST'])
 def register_with_existing_node():
@@ -385,7 +384,7 @@ def add_transaction():
         record_in_db(add_tx_result,'Transaction received')
         announce_new_transaction(add_tx_result)
         blockchain.tx_validation(add_tx_result)
-        
+        mine_unconfirmed_transactions()
         added = True
 
     if not added:
@@ -463,12 +462,15 @@ def record_in_db(transaction,activity,mode='transaction',qc_id=None):
     pass 
 
     conn = MongoClient('172.28.2.1:27017')
+    # conn = MongoClient('127.0.0.1:27017')
+
     db = conn.blockchaindb
     collect = db.transactions
 
     if mode =='transaction':
         dbtx = copy.deepcopy(transaction)
         dbtx['Transaction ID'] = sha256(json.dumps(transaction).encode()).hexdigest()
+        
         dbtx['Time in DB'] = time.time()
         dbtx['Node'] = 'Node '+ str(port-8000)
         dbtx['activity'] = activity

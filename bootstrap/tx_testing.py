@@ -27,9 +27,10 @@ def request_transaction(e_time,node_number):
         if now > start_time +e_time:
             break
         np.random.seed(int.from_bytes(os.urandom(4), byteorder='little'))
-        nt = generator.invoke_event(e_time=e_time,node_number=node_number)
+        nt = generator.invoke_event(e_time=e_time,node_number=3)
         node = nt[2]
         port = 8000+node
+        port =5000
         CONNECTED_NODE_ADDRESS = 'http://127.0.0.1:'+str(port)#+'/'
 
         term = nt[1]
@@ -63,8 +64,8 @@ def repeat_request_transaction():
 
     count = 0
     start_time = time.time()
-    
-    with open('./N20_NC10_SC10/time60_Nodes_20_evnet_list.json','r') as f:
+
+    with open('./evnet_list.json','r') as f:
         lines = f.readlines()
         now = time.time()
 
@@ -72,7 +73,6 @@ def repeat_request_transaction():
             nt = ast.literal_eval(line)
             node = int(nt[2])
             port = 8000+node
-            
 
             CONNECTED_NODE_ADDRESS = 'http://127.0.0.1:'+str(port)+'/'
 
@@ -95,22 +95,22 @@ def repeat_request_transaction():
                             headers={'Content-type': 'application/json'})    
                     
 def whois_mining(miner):
-    miner = 8000+miner
-    
+    # miner = 8000+miner
+    miner = 5000
     CONNECTED_NODE_ADDRESS = 'http://127.0.0.1:'+str(miner)+'/'
-    print(CONNECTED_NODE_ADDRESS)
-    permit_minig = "{}/mining_right".format(CONNECTED_NODE_ADDRESS)
+    permit_minig = "{}/permitmining_right".format(CONNECTED_NODE_ADDRESS)
     requests.get(permit_minig)
 
 if __name__=='__main__':
 
-    e_time = 60
+    e_time = 5
     node_number = 20
     miner =3
+
 
     processes =1
 
     whois_mining(miner)
-    # request_transaction(e_time,node_number)
+    request_transaction(e_time,1)
     
-    repeat_request_transaction()
+

@@ -97,5 +97,5 @@ networkx.draw(graph,with_labels=True)
 
 ax.set_title('Network Structure',fontsize=20)
 
-plt.savefig('./networkstructure.png',bbox_inches = "tight")
-
+pltname = './Node'+str(n+1)+'_networkstructure.png'
+plt.savefig(pltname,bbox_inches = "tight")

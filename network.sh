@@ -31,6 +31,7 @@ if [ "$MODE" = "up" ]; then
     echo '\n'
     echo "Generate random network"
     cd python_blockchainapp
+    chmod +x networkgenerate.py
     python3 networkgenerate.py -n $Node_number
 
     echo '\n'

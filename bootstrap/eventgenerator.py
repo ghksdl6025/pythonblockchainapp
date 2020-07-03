@@ -10,40 +10,49 @@ import quality_control
 
 class create_event:
     def __init__(self):
-        self.ci_candidates = [x+1 for x in range(9)]
+        self.NC=10
+        self.SC=10
+        self.data_candidates = {1:[]}
+        for ci in range(self.NC):
+            for x in range(self.SC):
+                self.data_candidates[1].append([str(ci+1),str(x+1)])
         self.used_ci_candidates = {}
 
+        self.citerm = {}
+        for x in range(self.NC):
+            self.citerm[x+1] = [1]
+            
     def newevent(self,node_number):
-        node = np.random.choice(node_number,1)  
-        datatype_choice = np.random.rand(1)
+        node = int(np.random.choice(node_number,1)[0])
 
-        ci = int(np.random.choice(self.ci_candidates,1)[0])
-        if ci not in self.used_ci_candidates.keys():
-            term = 1
-            self.used_ci_candidates[ci]={term:set()}
+        ci = int(np.random.choice(self.NC,1)[0]+1)
+        # print()
+        term =self.citerm[ci][-1]
+
+        if ci not in list(self.used_ci_candidates.keys()):
+            self.used_ci_candidates[ci]={}
+            self.used_ci_candidates[ci][term] = []
         else:
-            term = sorted(self.used_ci_candidates[ci].keys())[-1]
-            if 1 in self.used_ci_candidates[ci][term] and 2 in self.used_ci_candidates[ci][term]:
-                term +=1
-                self.used_ci_candidates[ci][term]=set()
-            elif 1 in self.used_ci_candidates[ci][term] and 2 not in self.used_ci_candidates[ci][term]:
-                datatype_choice = 0
-            elif 1 not in self.used_ci_candidates[ci][term] and 2 in self.used_ci_candidates[ci][term]:
-                datatype_choice = 1
+            if term not in list(self.used_ci_candidates[ci].keys()):
+                self.used_ci_candidates[ci][term] = []
+            
 
+        while True:
+            d = np.random.choice(self.SC,1)[0]+1
+            if d not in list(self.used_ci_candidates[ci][term]):
+                break
 
-        d1 =int(math.ceil(np.random.exponential(scale=10,size=1)[0]))
-        d2 =int(math.ceil(np.random.exponential(scale=10,size=1)[0]))
+        data = 'd'+str(d)
+        d_content = int(math.ceil(np.random.exponential(scale=10,size=1)[0]))
         
-        if  datatype_choice>0.5:
-            datatype=1
-            transaction = {'ci':ci,'data':{'d1':d1}}
-        else:
-            datatype=2
-            transaction = {'ci':ci,'data':{'d2':d2}}
+        transaction = {'ci':ci,'data':{data:d_content}}
+
+        self.used_ci_candidates[ci][term].append(d)
+
+        if len(self.used_ci_candidates[ci][term])==self.SC:
+            self.citerm[ci].append(term+1)
         
-        self.used_ci_candidates[ci][term].add(datatype)
-        return (transaction,term,node[0]+1)
+        return (transaction,term,node+1)
 
     def invoke_event(self,e_time,node_number):
         
@@ -58,15 +67,14 @@ class create_event:
 
 if __name__ =='__main__':
     qc_checker = {}
-    generator = generate_event()
-    for x in range(50):
-        t = generator.newevent(3)
-        qc_id = '%s_%s'%(t[0]['ci'],str(t[1]))        
-        if qc_id not in qc_checker:
-            qc_checker[qc_id] = quality_control.QualityControl(CI=t[0]['ci'],term=t[1])
-        if bool('d1' in t[0]['data']):
-            qc_checker[qc_id].add_variable('d1',t[0]['data']['d1'])
-        else:
-            qc_checker[qc_id].add_variable('d2',t[0]['data']['d2'])
-        print(qc_checker[qc_id].tx_content())
-        
+    generator = create_event()
+    e_time =3
+    node_number=5
+    # nt = generator.invoke_event(e_time=e_time,node_number=node_number)
+    txlist=[]
+    for t in range(100):
+        nt = generator.invoke_event(e_time=e_time,node_number=node_number)
+        txlist.append(nt)
+
+    print(generator.used_ci_candidates)
+    # print(txlist)

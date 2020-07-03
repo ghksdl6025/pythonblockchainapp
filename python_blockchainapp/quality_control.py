@@ -11,10 +11,8 @@ class QualityControl:
         '''
         self.CI = CI
         self.term = term
-        self.d1 = d1
-        self.d2 = d2
         self.validation = False
-    
+        self.data ={}    
     def update_validation(self):
         '''
         Change validation attribute of class
@@ -26,11 +24,8 @@ class QualityControl:
         '''
         Add/update class attributes
         '''
-        variable = str(variable)
-        if variable =='d1':
-            self.d1 = value
-        elif variable =='d2':
-            self.d2 = value
+        
+        self.data[variable]= value
 
     def tx_content(self):
         '''
